@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Minute Muse — Quotes that change with the time</title>
+  <meta name="description" content="A small static app that shows an inspirational quote which updates every minute based on the time of day, with matching background imagery." />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app" role="main">
+    <div class="card" id="quote-card" aria-live="polite">
+      <div class="meta">
+        <div class="time" id="time">--:--</div>
+        <div class="period" id="period">Loading…</div>
+      </div>
+
+      <blockquote class="quote" id="quote">Loading inspirational quote…</blockquote>
+      <cite class="author" id="author"></cite>
+
+      <div class="controls">
+        <button id="new-quote" class="btn" title="Get a new quote now">New now</button>
+        <div class="next-change" id="next-change">Updates every minute</div>
+      </div>
+
+      <div class="attribution">Images via <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></div>
+    </div>
+  </main>
+
+  <script src="quotes.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
