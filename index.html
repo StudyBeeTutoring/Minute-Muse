@@ -3,31 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Minute Muse — Quotes that change with the time</title>
-  <meta name="description" content="A small static app that shows an inspirational quote which updates every minute based on the time of day, with matching background imagery." />
+  <title>Minute Muse — Your Cozy Corner</title>
+  <meta name="description" content="A cozy corner of the web with literature quotes synced to real-time." />
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- Google Font: Added 'Playfair Display' for a book-ish feel -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- The Film Grain Overlay -->
+  <div class="grain"></div>
+
   <main class="app" role="main">
+    
+    <!-- New Header Area -->
+    <header class="header-area">
+      <h1 id="greeting">Hello, Traveler</h1>
+      <div class="season-badge" id="season-badge">Detecting Season...</div>
+    </header>
+
     <div class="card" id="quote-card" aria-live="polite">
       <div class="meta">
         <div class="time" id="time">--:--</div>
         <div class="period" id="period">Loading…</div>
       </div>
 
-      <blockquote class="quote" id="quote">Loading inspirational quote…</blockquote>
+      <blockquote class="quote" id="quote">Loading story…</blockquote>
       <cite class="author" id="author"></cite>
 
       <div class="controls">
-        <button id="new-quote" class="btn" title="Get a new quote now">New now</button>
-        <div class="next-change" id="next-change">Updates every minute</div>
+        <button id="new-quote" class="btn" title="Refresh Mood">
+          <span class="icon">↻</span> New Vibe
+        </button>
+        <div class="next-change" id="next-change">...</div>
       </div>
 
-      <div class="attribution">Images via <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a></div>
+      <!-- Updated Attribution -->
+      <div class="attribution">
+        Quotes from <a href="https://github.com/JohannesNE/literature-clock" target="_blank">Literature Clock</a> &bull; 
+        Photography via <a href="https://loremflickr.com" target="_blank">LoremFlickr</a>
+      </div>
     </div>
   </main>
 
