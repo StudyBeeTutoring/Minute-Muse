@@ -1,6 +1,6 @@
 /* 
-   MINUTE MUSE - COZY EDITION
-   Includes: Real-time Book Quotes, Seasonal Awareness, Hemisphere Detection
+   MINUTE MUSE - COZY EDITION (Fixed Images)
+   Includes: Real-time Book Quotes, Seasonal Awareness, AI Background Generation
 */
 
 (() => {
@@ -18,9 +18,9 @@
   let lastPeriod = null;
   let currentQuoteData = null;
   let currentSeason = 'neutral';
-  let userHemisphere = 'north'; // default
+  let userHemisphere = 'north'; 
 
-  // --- FALLBACK QUOTES (If API fails) ---
+  // --- FALLBACK QUOTES ---
   const FALLBACK_TEMPLATES = [
     "The clock showed {time}, and the world held its breath.",
     "It was {time}. A quiet moment in a busy world.",
@@ -30,19 +30,20 @@
   ];
 
   // --- CONFIGURATION ---
+  // We use these descriptions to build a prompt for the AI
   const PERIODS = {
-    dawn: { label: 'Dawn', baseQuery: 'sunrise,mist,fog' },
-    morning: { label: 'Morning', baseQuery: 'morning,coffee,window,sunlight' },
-    afternoon: { label: 'Afternoon', baseQuery: 'library,books,afternoon,light' },
-    evening: { label: 'Evening', baseQuery: 'sunset,lamp,cozy,street' },
-    night: { label: 'Night', baseQuery: 'night,stars,moon,candle' }
+    dawn: { label: 'Dawn', prompt: 'calm serene sunrise, morning mist, soft golden light, cinematic lighting' },
+    morning: { label: 'Morning', prompt: 'cozy morning aesthetic, sunlight streaming through window, coffee cup, morning vibe' },
+    afternoon: { label: 'Afternoon', prompt: 'bright afternoon, beautiful architecture, library, study vibe, sunbeams' },
+    evening: { label: 'Evening', prompt: 'sunset hour, golden hour, warm lighting, cozy living room, street lights turning on' },
+    night: { label: 'Night', prompt: 'starry night sky, moonlight, cozy dark room, candle light, cinematic blue and orange tones' }
   };
 
   const SEASONS = {
-    winter: { label: 'Winter', query: 'snow,winter,cold,fireplace' },
-    spring: { label: 'Spring', query: 'flowers,spring,green,garden' },
-    summer: { label: 'Summer', query: 'summer,beach,sun,warm' },
-    autumn: { label: 'Autumn', query: 'autumn,leaves,rain,orange' }
+    winter: { label: 'Winter', prompt: 'winter season, snow outside, frost on window, fireplace, cold atmosphere' },
+    spring: { label: 'Spring', prompt: 'spring season, blooming flowers, green nature, fresh air, rain outside' },
+    summer: { label: 'Summer', prompt: 'summer season, warm sun, beach breeze, vibrant colors, clear sky' },
+    autumn: { label: 'Autumn', prompt: 'autumn season, falling orange leaves, rainy mood, cozy sweater weather' }
   };
 
   // --- LOGIC: TIME & SEASON ---
@@ -56,77 +57,73 @@
   }
 
   function detectLocationAndSeason() {
-    const month = new Date().getMonth(); // 0 = Jan, 11 = Dec
-    
-    // 1. Guess Hemisphere from Timezone
-    // (Most timezones in format "Region/City")
+    const month = new Date().getMonth(); 
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const southernRegions = ['Australia', 'Africa/Johannesburg', 'America/Sao_Paulo', 'Pacific', 'Atlantic/Stanley'];
     
-    // Simple check: if timezone string starts with 'Australia' or is in list -> South
-    // This is a rough heuristic.
-    let isSouth = southernRegions.some(r => tz.includes(r));
-    
-    // Refined check: specific handling can be complex, defaulting to North mostly unless specific keywords found
-    if (tz.includes("Australia") || tz.includes("New_Zealand") || tz.includes("Argentina") || tz.includes("Chile") || tz.includes("South_Africa")) {
-      isSouth = true;
-    }
+    // Simple Hemisphere Detection
+    let isSouth = false;
+    const southernRegions = ['Australia', 'Johannesburg', 'Sao_Paulo', 'Santiago', 'Auckland'];
+    if (southernRegions.some(r => tz.includes(r))) isSouth = true;
     
     userHemisphere = isSouth ? 'south' : 'north';
 
-    // 2. Determine Season based on Month + Hemisphere
-    // Northern: Winter (11,0,1), Spring (2,3,4), Summer (5,6,7), Autumn (8,9,10)
-    // Southern: Summer (11,0,1), Autumn (2,3,4), Winter (5,6,7), Spring (8,9,10)
-    
+    // Assign Season
     if (month === 11 || month === 0 || month === 1) currentSeason = isSouth ? 'summer' : 'winter';
     else if (month >= 2 && month <= 4) currentSeason = isSouth ? 'autumn' : 'spring';
     else if (month >= 5 && month <= 7) currentSeason = isSouth ? 'winter' : 'summer';
     else currentSeason = isSouth ? 'spring' : 'autumn';
 
-    // Update Badge
     elSeasonBadge.textContent = `${SEASONS[currentSeason].label} in ${tz.split('/')[1] || 'Your Area'}`;
   }
 
   function getGreeting(h) {
-    if (h < 5) return "Good Night, Owl";
+    if (h < 5) return "Good Night, Dreamer";
     if (h < 12) return "Good Morning";
     if (h < 17) return "Good Afternoon";
     if (h < 22) return "Good Evening";
     return "Sleep Well";
   }
 
-  // --- LOGIC: IMAGES ---
+  // --- LOGIC: IMAGES (UPDATED TO USE AI GENERATION) ---
 
   function buildBackgroundUrl(period) {
-    // Combine Period keywords + Season keywords
     const pData = PERIODS[period];
     const sData = SEASONS[currentSeason];
     
-    const query = `${pData.baseQuery},${sData.query}`;
-    const randomLock = Math.floor(Math.random() * 5000);
+    // Construct a rich prompt for the AI
+    // e.g. "cinematic photography of winter season, snow outside... starry night sky..."
+    const prompt = `cinematic photography of ${sData.prompt}, ${pData.prompt}, highly detailed, 8k, scenery, no people`;
     
-    // LoremFlickr allows searching by keywords
-    return `https://loremflickr.com/1600/900/${encodeURIComponent(query)}?lock=${randomLock}`;
+    // Add a random seed so the image changes when we want it to
+    const seed = Math.floor(Math.random() * 10000);
+    
+    // Pollinations API URL structure
+    // We request 1600x900 size, and nologo=true
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1600&height=900&nologo=true&seed=${seed}&model=flux`;
   }
 
   function preloadAndSetBackground(url) {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
+      
       img.onload = () => {
+        // Apply image
         document.body.style.backgroundImage = `url("${url}")`;
         resolve();
       };
+      
       img.onerror = () => {
-        // Fallback: Just a dark gradient
-        document.body.style.backgroundImage = `linear-gradient(to bottom, #111, #222)`;
+        // Fallback if AI fails: Dark Gradient
+        document.body.style.backgroundImage = `linear-gradient(to bottom, #0f2027, #203a43, #2c5364)`;
         resolve();
       };
+      
       img.src = url;
     });
   }
 
-  // --- LOGIC: QUOTES ---
+  // --- LOGIC: QUOTES (UNCHANGED) ---
 
   async function fetchRealQuote(date) {
     const hh = String(date.getHours()).padStart(2, '0');
@@ -159,9 +156,7 @@
     elAuthor.classList.add('fade-out');
 
     setTimeout(() => {
-      // Build quote HTML
       let qText = quoteData.text;
-      // Simple clean up
       qText = qText.replace(/<br>/g, ' '); 
 
       elQuote.innerHTML = `“${qText}”`;
@@ -191,18 +186,17 @@
     const h = now.getHours();
     const period = getPeriod(h);
 
-    // Update Greetings
     elGreeting.textContent = getGreeting(h);
 
-    // Determine if we need image update
+    // Update Background if period changed or forced
     if (force || period !== lastPeriod) {
       lastPeriod = period;
-      detectLocationAndSeason(); // Refresh season logic
+      detectLocationAndSeason(); 
       const bgUrl = buildBackgroundUrl(period);
+      // We don't await here to let quotes load fast, background will snap in when ready
       preloadAndSetBackground(bgUrl);
     }
 
-    // Fetch Quote
     if (!currentQuoteData || force || now.getSeconds() === 0) {
       currentQuoteData = await fetchRealQuote(now);
     }
@@ -221,7 +215,6 @@
 
     updateDisplay(finalQuote, PERIODS[period].label);
     
-    // Reset clock text immediately
     const hh = String(h).padStart(2,'0');
     const mm = String(now.getMinutes()).padStart(2,'0');
     elTime.textContent = `${hh}:${mm}`;
@@ -229,10 +222,8 @@
 
   // --- INIT ---
 
-  // Detect season once on load
   detectLocationAndSeason();
 
-  // Button Listeners
   elNew.addEventListener('click', () => performUpdate(true));
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
@@ -241,11 +232,8 @@
     }
   });
 
-  // Timers
   (async function init() {
     await performUpdate(true);
-
-    // Update Seconds Countdown
     setInterval(() => {
       const now = new Date();
       elNext.textContent = `Next page in ${60 - now.getSeconds()}s`;
