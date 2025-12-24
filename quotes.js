@@ -1,37 +1,62 @@
-const QUOTES = {
+// Fallback templates in case the API call fails or finds no match for a specific minute
+const FALLBACK_TEMPLATES = {
   dawn: [
-    { text: "Every sunrise is an invitation to brighten someone's day.", author: "Richelle E. Goodrich" },
-    { text: "Dawn is when nothing can be said to be certain.", author: "John Updike" },
-    { text: "Let the morning bring me word of your unfailing love.", author: "Psalm 143:8" },
-    { text: "The breeze at dawn has secrets to tell you. Don't go back to sleep.", author: "Rumi" },
-    { text: "Lose an hour in the morning, and you will be all day hunting for it.", author: "Richard Whately" }
+    "The clock showed {time}, and the first light began to bleed through the curtains.",
+    "It was {time}. The world was holding its breath before the sunrise.",
+    "At exactly {time}, the birds began their morning council.",
+    "He looked at his watch: {time}. Too early to rise, too late to sleep."
   ],
   morning: [
-    { text: "With the new day comes new strength and new thoughts.", author: "Eleanor Roosevelt" },
-    { text: "Your morning sets the tone for the day — start intentionally.", author: "Unknown" },
-    { text: "Begin each day with a grateful heart.", author: "Roy T. Bennett" },
-    { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
-    { text: "Rise up, start fresh, see the bright opportunity in each day.", author: "Unknown" }
+    "The coffee poured into the cup at {time}, steaming with promise.",
+    "It was {time}, and the city was already awake and demanding attention.",
+    "She checked the time—{time}—and realized the day had truly begun."
   ],
   afternoon: [
-    { text: "Do not wait; the time will never be 'just right'. Start where you stand.", author: "Napoleon Hill" },
-    { text: "Success usually comes to those who are too busy to be looking for it.", author: "Henry David Thoreau" },
-    { text: "Keep your face always toward the sunshine—and shadows will fall behind you.", author: "Walt Whitman" },
-    { text: "Focus on progress, not perfection.", author: "Unknown" },
-    { text: "The best way to predict the future is to create it.", author: "Peter Drucker" }
+    "The shadows grew longer as the clock struck {time}.",
+    "It was {time}, the hour when the day decides if it will be good or bad.",
+    "He glanced up. {time}. The work was nowhere near finished."
   ],
   evening: [
-    { text: "Every day brings new choices.", author: "Martha Beck" },
-    { text: "The evening sings in a voice of amber, the dawn is surely coming.", author: "S. Rowland" },
-    { text: "Be willing to be a beginner every single morning.", author: "Meister Eckhart" },
-    { text: "Slow down and everything you are chasing will come around and catch you.", author: "John de Paola" },
-    { text: "The day is over, the night has come. Today is gone, what's done is done.", author: "Unknown" }
+    "The sky turned purple at {time}, signaling the end of the shift.",
+    "It was {time}. The streetlights flickered to life one by one.",
+    "At {time}, the noise of the day finally began to settle."
   ],
   night: [
-    { text: "The world is full of magic things, patiently waiting for our senses to grow sharper.", author: "W.B. Yeats" },
-    { text: "Stars can't shine without darkness.", author: "D.H. Sidebottom" },
-    { text: "Rest and be kind to yourself. You are doing the best you can.", author: "Unknown" },
-    { text: "Night is a world lit by itself.", author: "Antonio Porchia" },
-    { text: "Let go of the day. Tomorrow opens new pages.", author: "Unknown" }
+    "It was {time}. The world belonged to the dreamers now.",
+    "The clock read {time}. The darkness was absolute and comforting.",
+    "At {time}, the only sound was the hum of the refrigerator."
   ]
+};
+
+const FICTIONAL_AUTHORS = [
+  "The Narrator", "Chapter 4", "The Lost Diary", "Chronicles of Now", 
+  "A Forgotten Novel", "Page 394", "The Timekeeper", "Midnight Tales"
+];
+
+// Helper to convert date to 12h format (e.g., "4:30 PM") for the fallback
+function formatTime12(date) {
+  let hours = date.getHours();
+  let minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  minutes = minutes < 10 ? '0'+minutes : minutes;
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+function getRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+const QuoteFallback = {
+  get: function(period, date) {
+    const templates = FALLBACK_TEMPLATES[period] || FALLBACK_TEMPLATES['morning'];
+    const template = getRandom(templates);
+    const timeStr = formatTime12(date);
+    const author = getRandom(FICTIONAL_AUTHORS);
+    return {
+      text: template.replace("{time}", timeStr),
+      author: author
+    };
+  }
 };
