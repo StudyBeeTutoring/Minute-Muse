@@ -7,8 +7,8 @@
   const elNew = document.getElementById('new-quote');
 
   let lastPeriod = null;
+  let currentQuoteData = null; // Store fetched quotes for the current minute
 
-  // Map period key to a friendly label + keywords for background
   const PERIODS = {
     dawn: { label: 'Dawn', query: 'sunrise,nature' },
     morning: { label: 'Morning', query: 'sunlight,coffee' },
@@ -17,7 +17,6 @@
     night: { label: 'Night', query: 'stars,night,lamp' }
   };
 
-  // Utility: determine time-of-day bucket
   function getPeriod(d = new Date()) {
     const h = d.getHours();
     if (h >= 5 && h < 8) return 'dawn';
@@ -27,15 +26,13 @@
     return 'night';
   }
 
-  // FIXED: Use LoremFlickr instead of the broken Unsplash Source
+  // Use LoremFlickr for reliable backgrounds
   function buildBackgroundUrl(period) {
     const q = PERIODS[period]?.query || 'nature';
-    // Add a random lock number to ensure the image changes when we want it to
     const randomLock = Math.floor(Math.random() * 1000);
     return `https://loremflickr.com/1600/900/${q}?lock=${randomLock}`;
   }
 
-  // Preload new background image
   function preloadAndSetBackground(url) {
     return new Promise((resolve) => {
       const img = new Image();
@@ -45,7 +42,6 @@
         resolve();
       };
       img.onerror = () => {
-        // Fallback gradient
         document.body.style.backgroundImage = `linear-gradient(135deg, #08357a, #0b2b1a)`;
         resolve();
       };
@@ -53,14 +49,40 @@
     });
   }
 
-  function updateQuoteDisplay({ text, author }, periodLabel) {
+  // --- NEW: FETCH REAL BOOK QUOTES ---
+  async function fetchRealQuote(date) {
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const fileName = `${hh}_${mm}.json`;
+    
+    // Using the raw GitHub data from the Literature Clock project
+    const url = `https://raw.githubusercontent.com/JohannesNE/literature-clock/master/docs/times/${fileName}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('No quote found');
+      const data = await response.json();
+      // The API returns an array of quotes for this minute
+      return data; 
+    } catch (e) {
+      return null; // Return null to trigger fallback
+    }
+  }
+
+  function updateQuoteDisplay({ text, author, title }, periodLabel) {
     elQuote.classList.add('fade-out');
     elAuthor.classList.add('fade-out');
 
     setTimeout(() => {
-      // Logic for quotes: text is now the story sentence
-      elQuote.textContent = `“${text}”`; 
-      elAuthor.textContent = `— ${author}`;
+      elQuote.innerHTML = `“${text}”`; // Use innerHTML to handle possible bolding from API
+      
+      // If we have a book title (from API), show it
+      if (title) {
+        elAuthor.innerHTML = `— <span class="author-name">${author}</span>, <em>${title}</em>`;
+      } else {
+        elAuthor.textContent = `— ${author}`;
+      }
+      
       elPeriod.textContent = periodLabel;
 
       elQuote.classList.remove('fade-out');
@@ -89,21 +111,37 @@
     const period = getPeriod(now);
     const periodData = PERIODS[period];
 
-    // If period changed OR force clicked, change background
+    // Background update
     if (force || period !== lastPeriod) {
       lastPeriod = period;
       const bgUrl = buildBackgroundUrl(period);
-      // We don't await this if it's just a minute tick to avoid blocking, 
-      // but for "New Now" (force) we might want to.
       preloadAndSetBackground(bgUrl);
     }
 
-    // ALWAYS generate a new quote with the current EXACT time
-    // This is the core change: pass 'now' to the generator
-    const quoteData = QuoteGenerator.get(period, now);
-    
-    updateQuoteDisplay(quoteData, periodData.label);
-    
+    // Try to get real quotes for this minute
+    // We cache them in `currentQuoteData` so "New Now" doesn't re-fetch unnecessarily
+    if (!currentQuoteData || force || now.getSeconds() === 0) {
+       // Only fetch if we moved to a new minute or don't have data
+       currentQuoteData = await fetchRealQuote(now);
+    }
+
+    let quoteToDisplay;
+
+    if (currentQuoteData && currentQuoteData.length > 0) {
+      // Pick a random quote from the real book list
+      const randomItem = currentQuoteData[Math.floor(Math.random() * currentQuoteData.length)];
+      quoteToDisplay = {
+        text: randomItem.quote_first + " " + randomItem.quote_time_case + " " + randomItem.quote_last,
+        author: randomItem.author,
+        title: randomItem.title
+      };
+    } else {
+      // FALLBACK: Use the generated template
+      console.log("Using fallback quote");
+      quoteToDisplay = QuoteFallback.get(period, now);
+    }
+
+    updateQuoteDisplay(quoteToDisplay, periodData.label);
     updateClock();
   }
 
@@ -112,15 +150,17 @@
     const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 
     setTimeout(() => {
+      // Reset data cache on minute tick so we fetch new quotes
+      currentQuoteData = null; 
       performUpdate();
       setInterval(() => {
+        currentQuoteData = null;
         performUpdate();
       }, 60 * 1000);
     }, msToNextMinute);
   }
 
   elNew.addEventListener('click', () => {
-    // Force true means get new background AND quote
     performUpdate(true);
   });
 
@@ -132,7 +172,6 @@
   });
 
   (async function init() {
-    // Initial load
     await performUpdate(true);
     scheduleMinuteUpdates();
     setInterval(updateClock, 1000);
