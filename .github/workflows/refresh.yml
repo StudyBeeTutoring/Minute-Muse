@@ -1,0 +1,35 @@
+name: Daily Image Refresh
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows you to run it manually button click
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Run Curator Script
+        env:
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        run: node generate-images.js
+
+      - name: Commit and Push New Images
+        run: |
+          git config --global user.name "MinuteMuse Bot"
+          git config --global user.email "studybeetutoring@gmail.com"
+          git add images.json
+          git commit -m "Daily image refresh" || echo "No changes to commit"
+          git push
