@@ -6,17 +6,19 @@
   <title>Minute Muse</title>
   <meta name="description" content="A cozy corner of the web with literature quotes synced to real-time." />
   
+  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Film Grain Overlay -->
   <div class="grain"></div>
 
   <main class="app" role="main">
     
     <header class="header-area">
+      <!-- ID: greeting (Required) -->
       <h1 id="greeting">Hello, Traveler</h1>
+      <!-- ID: season-badge (Required) -->
       <div class="season-badge" id="season-badge">Detecting Season...</div>
     </header>
 
@@ -36,9 +38,9 @@
         <div class="next-change" id="next-change">...</div>
       </div>
 
-      <!-- UPDATED ATTRIBUTION FOOTER -->
       <div class="attribution">
-        <span id="photo-credit">Photo via Unsplash</span>
+        <!-- ID: photo-credit (Required) -->
+        <span id="photo-credit">Atmosphere via Unsplash</span>
         <span class="separator">&bull;</span>
         Quotes from <a href="https://github.com/JohannesNE/literature-clock" target="_blank">Literature Clock</a>
       </div>
