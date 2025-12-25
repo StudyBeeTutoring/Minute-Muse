@@ -3,27 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Minute Muse — Your Cozy Corner</title>
+  <title>Minute Muse</title>
   <meta name="description" content="A cozy corner of the web with literature quotes synced to real-time." />
-
-  <!-- Google Font: Added 'Playfair Display' for a book-ish feel -->
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- The Film Grain Overlay -->
+  <!-- Film Grain Overlay -->
   <div class="grain"></div>
 
   <main class="app" role="main">
     
-    <!-- New Header Area -->
     <header class="header-area">
       <h1 id="greeting">Hello, Traveler</h1>
       <div class="season-badge" id="season-badge">Detecting Season...</div>
     </header>
 
-    <div class="card" id="quote-card" aria-live="polite">
+    <div class="card" id="quote-card">
       <div class="meta">
         <div class="time" id="time">--:--</div>
         <div class="period" id="period">Loading…</div>
@@ -39,14 +36,15 @@
         <div class="next-change" id="next-change">...</div>
       </div>
 
+      <!-- UPDATED ATTRIBUTION FOOTER -->
       <div class="attribution">
-        Quotes from <a href="https://github.com/JohannesNE/literature-clock" target="_blank">Literature Clock</a> &bull; 
-        Atmosphere via <a href="https://pollinations.ai" target="_blank">Pollinations AI</a>
+        <span id="photo-credit">Photo via Unsplash</span>
+        <span class="separator">&bull;</span>
+        Quotes from <a href="https://github.com/JohannesNE/literature-clock" target="_blank">Literature Clock</a>
       </div>
     </div>
   </main>
 
-  <script src="quotes.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
