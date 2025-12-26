@@ -2,9 +2,13 @@ name: Hourly Image Refresh
 
 on:
   schedule:
-    # 🔴 CHANGE: Runs at minute 0 of every hour
-    - cron: '0 * * * *'
+    - cron: '0 * * * *' # Runs every hour
   workflow_dispatch:
+
+# 👇 THIS BLOCK IS MISSING OR NOT WORKING 👇
+permissions:
+  contents: write
+# 👆 THIS IS CRITICAL FOR GIT PUSH 👆
 
 jobs:
   refresh-images:
@@ -27,6 +31,7 @@ jobs:
       - name: Commit and Push New Images
         run: |
           git config --global user.name "MinuteMuse Bot"
-          git config --global user.email "studybeetutoring@gmail.com"
+          git config --global user.email "bot@minutemuse.com"
           git add images.json
+          # The logic below prevents failure if there are no changes
           git diff --quiet && git diff --staged --quiet || (git commit -m "Hourly image refresh" && git push)
