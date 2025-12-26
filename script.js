@@ -1,8 +1,3 @@
-/* 
-   MINUTE MUSE - ROBUST EDITION
-   Includes safety checks to prevent "Stuck Loading"
-*/
-
 (() => {
   // --- DOM ELEMENTS ---
   const elQuote = document.getElementById('quote');
@@ -10,16 +5,34 @@
   const elTime = document.getElementById('time');
   const elPeriod = document.getElementById('period');
   const elNext = document.getElementById('next-change');
-  const elNew = document.getElementById('new-quote');
   const elGreeting = document.getElementById('greeting');
   const elSeasonBadge = document.getElementById('season-badge');
   const elPhotoCredit = document.getElementById('photo-credit');
+  const elRain = document.getElementById('rain-effect');
+
+  // Toolbar
+  const btnSound = document.getElementById('btn-sound');
+  const btnZen = document.getElementById('btn-zen');
+  const btnJournal = document.getElementById('btn-journal');
+  const btnNew = document.getElementById('new-quote');
+
+  // Journal
+  const elJournalOverlay = document.getElementById('journal-overlay');
+  const elJournalText = document.getElementById('journal-text');
+  const btnCloseJournal = document.getElementById('btn-close-journal');
+
+  // Audio
+  const audioRain = document.getElementById('audio-rain');
+  const audioFire = document.getElementById('audio-fire');
+  const audioNature = document.getElementById('audio-nature');
 
   // --- STATE ---
   let lastPeriod = null;
   let currentQuoteData = null;
   let climateMode = 'north'; 
-  let imageData = null; 
+  let imageData = null;
+  let isMuted = true;
+  let isZen = false;
 
   const PERIODS_CONFIG = {
     dawn: { label: 'Dawn' },
@@ -31,11 +44,68 @@
 
   const FALLBACK_TEMPLATES = [
     "The clock showed {time}, and the world held its breath.",
-    "It was {time}. A quiet moment in a busy world.",
-    "At exactly {time}, the light shifted in the room."
+    "It was {time}. A quiet moment in a busy world."
   ];
 
-  // --- 1. CLIMATE LOGIC ---
+  // --- 1. FEATURES LOGIC ---
+
+  // AUDIO MANAGER
+  function updateAmbience() {
+    // Stop all first
+    audioRain.pause();
+    audioFire.pause();
+    audioNature.pause();
+
+    // Turn off visual rain by default
+    if(elRain) elRain.style.opacity = '0';
+
+    if (isMuted) {
+      btnSound.innerHTML = '<span class="icon">🔇</span>';
+      return;
+    }
+
+    btnSound.innerHTML = '<span class="icon">🔊</span>';
+
+    // Play based on Climate
+    if (climateMode === 'tropical') {
+      audioRain.volume = 0.3;
+      audioRain.play();
+      // Turn on visual rain!
+      if(elRain) elRain.style.opacity = '0.4'; 
+    } else if (climateMode === 'north') {
+      // Winter -> Fireplace
+      audioFire.volume = 0.4;
+      audioFire.play();
+    } else {
+      // Summer/South -> Nature
+      audioNature.volume = 0.2;
+      audioNature.play();
+    }
+  }
+
+  btnSound.addEventListener('click', () => {
+    isMuted = !isMuted;
+    updateAmbience();
+  });
+
+  // ZEN MODE
+  btnZen.addEventListener('click', () => {
+    isZen = !isZen;
+    document.body.classList.toggle('zen-active', isZen);
+  });
+
+  // JOURNAL
+  btnJournal.addEventListener('click', () => {
+    elJournalText.value = localStorage.getItem('minuteMuseJournal') || "";
+    elJournalOverlay.classList.remove('hidden');
+  });
+
+  btnCloseJournal.addEventListener('click', () => {
+    localStorage.setItem('minuteMuseJournal', elJournalText.value);
+    elJournalOverlay.classList.add('hidden');
+  });
+
+  // --- 2. CORE LOGIC (Location & Time) ---
 
   function detectClimate() {
     try {
@@ -43,8 +113,8 @@
       const city = tz.split('/')[1] || tz;
       const locationName = city.replace(/_/g, ' ');
 
-      const TROPICAL_KEYWORDS = ['Singapore','Jakarta','Bangkok','Ho_Chi_Minh','Kuala_Lumpur','Manila','Phnom_Penh','Yangon','Colombo','Maldives','Honolulu','Fiji','Jamaica','Puerto_Rico','Barbados','Havana','Bogota','Caracas','Lagos','Nairobi','Accra','Dakar'];
-      const SOUTHERN_KEYWORDS = ['Australia','New_Zealand','Auckland','Sydney','Melbourne','Brisbane','Perth','Johannesburg','Cape_Town','Buenos_Aires','Santiago','Sao_Paulo','Rio_de_Janeiro'];
+      const TROPICAL_KEYWORDS = ['Singapore','Jakarta','Bangkok','Ho_Chi_Minh','Kuala_Lumpur','Manila','Phnom_Penh','Yangon','Colombo','Maldives','Honolulu','Fiji','Jamaica','Bogota','Lagos','Nairobi'];
+      const SOUTHERN_KEYWORDS = ['Australia','New_Zealand','Auckland','Sydney','Johannesburg','Cape_Town','Buenos_Aires','Santiago','Sao_Paulo'];
 
       let detected = 'north';
       if (TROPICAL_KEYWORDS.some(k => tz.includes(k))) detected = 'tropical';
@@ -52,18 +122,12 @@
 
       climateMode = detected;
 
-      // Update Badge (Safety Check)
-      if (elSeasonBadge) {
-        if (detected === 'tropical') elSeasonBadge.textContent = `Tropical Climate • ${locationName}`;
-        else {
-          const isWinter = [11, 0, 1].includes(new Date().getMonth());
-          const season = (detected === 'north' ? isWinter : !isWinter) ? "Winter" : "Summer";
-          elSeasonBadge.textContent = `${detected === 'north' ? 'Northern' : 'Southern'} Hemisphere • ${locationName}`;
-        }
-      }
+      // Update Badge
+      if (detected === 'tropical') elSeasonBadge.textContent = `Tropical Climate • ${locationName}`;
+      else elSeasonBadge.textContent = `${detected === 'north' ? 'Northern' : 'Southern'} Hemisphere • ${locationName}`;
+      
     } catch (e) {
-      console.warn("Climate detection failed:", e);
-      climateMode = 'north'; // Default
+      climateMode = 'north'; 
     }
   }
 
@@ -75,18 +139,14 @@
     return 'night';
   }
 
-  // --- DATA LOADING ---
+  // --- 3. DATA & UI ---
 
   async function loadImages() {
     try {
-      // Add a timestamp to prevent caching old JSON
       const res = await fetch(`images.json?t=${new Date().getTime()}`);
       if (!res.ok) throw new Error("JSON not found");
       imageData = await res.json();
-      console.log("Images loaded successfully");
-    } catch (e) {
-      console.warn("Using fallback gradients (images.json missing or invalid).");
-    }
+    } catch (e) { console.warn("Fallback mode"); }
   }
 
   async function fetchRealQuote(date) {
@@ -106,49 +166,31 @@
     return { text: tmpl.replace("{time}", t), author: "The Narrator", title: "Life, Unscripted" };
   }
 
-  // --- UI UPDATES ---
-
   function updateBackground(period) {
-    // Safety: Check if imageData exists and has the right structure
     if (imageData && imageData[climateMode] && Array.isArray(imageData[climateMode][period])) {
-      
       const images = imageData[climateMode][period];
       const imgObj = images[Math.floor(Math.random() * images.length)];
-      
-      // Safety: Check if imgObj has a URL
       if(imgObj && imgObj.url) {
         const img = new Image();
         img.onload = () => { document.body.style.backgroundImage = `url("${imgObj.url}")`; };
         img.src = imgObj.url;
-
-        // Update Credit
-        if (elPhotoCredit) {
-           elPhotoCredit.innerHTML = `Photo by <a href="${imgObj.link}?utm_source=MinuteMuse&utm_medium=referral" target="_blank">${imgObj.name}</a> on <a href="https://unsplash.com/?utm_source=MinuteMuse&utm_medium=referral" target="_blank">Unsplash</a>`;
-        }
+        elPhotoCredit.innerHTML = `Photo by <a href="${imgObj.link}?utm_source=MinuteMuse&utm_medium=referral" target="_blank">${imgObj.name}</a> on <a href="https://unsplash.com/?utm_source=MinuteMuse&utm_medium=referral" target="_blank">Unsplash</a>`;
         return;
       }
     }
-    
-    // Fallback if anything fails
     document.body.style.backgroundImage = `linear-gradient(to bottom, #0f2027, #2c5364)`;
   }
 
   function updateDisplay(quoteData, periodLabel) {
-    // Safety checks
-    if(!elQuote || !elAuthor || !elPeriod) return;
-
     elQuote.classList.add('fade-out');
     elAuthor.classList.add('fade-out');
 
     setTimeout(() => {
       let qText = quoteData.text ? quoteData.text.replace(/<br>/g, ' ') : "Thinking..."; 
       elQuote.innerHTML = `“${qText}”`;
+      if (quoteData.title) elAuthor.innerHTML = `<span class="author-name">${quoteData.author}</span><br><em>${quoteData.title}</em>`;
+      else elAuthor.textContent = quoteData.author || "Unknown";
       
-      if (quoteData.title) {
-        elAuthor.innerHTML = `<span class="author-name">${quoteData.author}</span><br><em>${quoteData.title}</em>`;
-      } else {
-        elAuthor.textContent = quoteData.author || "Unknown";
-      }
       elPeriod.textContent = periodLabel;
 
       elQuote.classList.remove('fade-out');
@@ -168,15 +210,15 @@
     const h = now.getHours();
     const period = getPeriod(h);
 
-    if (elGreeting) {
-       const g = h < 5 ? "Good Night" : h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : h < 22 ? "Good Evening" : "Sleep Well";
-       elGreeting.textContent = g;
-    }
+    const g = h < 5 ? "Good Night" : h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : h < 22 ? "Good Evening" : "Sleep Well";
+    elGreeting.textContent = g;
 
     if (force || period !== lastPeriod) {
       lastPeriod = period;
       detectClimate(); 
       updateBackground(period);
+      // Re-trigger audio check in case environment changed
+      if(!isMuted) updateAmbience();
     }
 
     if (!currentQuoteData || force || now.getSeconds() === 0) {
@@ -198,7 +240,7 @@
     updateDisplay(finalQuote, PERIODS_CONFIG[period].label);
     const hh = String(h).padStart(2,'0');
     const mm = String(now.getMinutes()).padStart(2,'0');
-    if(elTime) elTime.textContent = `${hh}:${mm}`;
+    elTime.textContent = `${hh}:${mm}`;
   }
 
   // --- INIT ---
@@ -208,19 +250,16 @@
     detectClimate();
     await performUpdate(true);
     
-    if(elNew) elNew.addEventListener('click', () => performUpdate(true));
+    btnNew.addEventListener('click', () => performUpdate(true));
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') { e.preventDefault(); performUpdate(true); }
     });
     
-    // Safety check for timer
-    if(elNext) {
-        setInterval(() => {
-          const now = new Date();
-          elNext.textContent = `Next page in ${60 - now.getSeconds()}s`;
-          if(now.getSeconds() === 0) performUpdate();
-        }, 1000);
-    }
+    setInterval(() => {
+      const now = new Date();
+      elNext.textContent = `Next page in ${60 - now.getSeconds()}s`;
+      if(now.getSeconds() === 0) performUpdate();
+    }, 1000);
   })();
 
 })();
