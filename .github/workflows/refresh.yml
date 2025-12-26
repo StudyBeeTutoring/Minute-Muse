@@ -1,18 +1,15 @@
-name: Daily Image Refresh
+name: Hourly Image Refresh
 
 on:
   schedule:
-    # Runs at 00:00 UTC 
-    - cron: '0 0 * * *'
+    # 🔴 CHANGE: Runs at minute 0 of every hour
+    - cron: '0 * * * *'
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   refresh-images:
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # <--- SAFETY CAP: Kills job if it takes longer than 5 mins
+    timeout-minutes: 5
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -32,5 +29,4 @@ jobs:
           git config --global user.name "MinuteMuse Bot"
           git config --global user.email "studybeetutoring@gmail.com"
           git add images.json
-          # The logic below prevents the workflow from failing if there's nothing to update
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Daily image refresh" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Hourly image refresh" && git push)
