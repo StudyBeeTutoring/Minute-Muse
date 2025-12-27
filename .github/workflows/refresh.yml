@@ -2,7 +2,7 @@ name: Hourly Image Refresh
 
 on:
   schedule:
-    - cron: '0 * * * *' # Runs every hour
+    - cron: '41 * * * *' # Runs every hour
   workflow_dispatch:
 
 # 👇 THIS BLOCK IS MISSING OR NOT WORKING 👇
